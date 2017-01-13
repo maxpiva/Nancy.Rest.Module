@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Nancy.Rest.Annotations;
+using Nancy.Rest.Annotations.Enums;
 using Nancy.Rest.Module.Filters;
 
-namespace Nancy.Rest.Module
+namespace Nancy.Rest.Module.Helper
 {
     internal static class Extensions
     {

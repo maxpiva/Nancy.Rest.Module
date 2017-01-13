@@ -9,7 +9,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy.ModelBinding;
-using Nancy.Rest.Annotations;
+using Nancy.Rest.Annotations.Atributes;
+using Nancy.Rest.Annotations.Enums;
+using Nancy.Rest.Annotations.Interfaces;
 using Nancy.Rest.Module.Exceptions;
 using Nancy.Rest.Module.Filters;
 using Nancy.Rest.Module.Helper;
@@ -51,7 +53,7 @@ namespace Nancy.Rest.Module
         }
         private static Regex rpath = new Regex("\\{(.*?)\\}", RegexOptions.Compiled);
 
-        private string CheckMethodAssign(MethodInfo minfo, Annotations.Rest attribute)
+        private string CheckMethodAssign(MethodInfo minfo, Annotations.Atributes.Rest attribute)
         {
             List<ParamInfo> parms=new List<ParamInfo>();
             MatchCollection collection = rpath.Matches(attribute.Route);
@@ -62,7 +64,7 @@ namespace Nancy.Rest.Module
                     string value = m.Groups[1].Value;
                     bool optional = false;
                     string constraint = null;
-                    int idx = value.LastIndexOf("?");
+                    int idx = value.LastIndexOf("?",StringComparison.InvariantCulture);
                     if (idx > 0)
                     {
                         value = value.Substring(0, idx);
@@ -73,7 +75,7 @@ namespace Nancy.Rest.Module
                     {
                         constraint = value.Substring(idx + 1);
                         value = value.Substring(0, idx);
-                        idx = constraint.LastIndexOf("(");
+                        idx = constraint.LastIndexOf("(", StringComparison.InvariantCulture);
                         if (idx > 0)
                             constraint = constraint.Substring(0, idx);
                     }
@@ -137,7 +139,7 @@ namespace Nancy.Rest.Module
                 List<string> errors = new List<string>();
                 foreach (MethodInfo m in cls.GetType().GetMethods())
                 {
-                    Annotations.Rest r = m.GetCustomAttributesFromInterfaces<Annotations.Rest>().FirstOrDefault();
+                    Annotations.Atributes.Rest r = m.GetCustomAttributesFromInterfaces<Annotations.Atributes.Rest>().FirstOrDefault();
                     if (r == null)
                         continue;
                     Type[] types = m.GetParameters().Select(a => a.ParameterType).ToArray();

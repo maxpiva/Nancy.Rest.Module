@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
-using Nancy.Rest.Annotations;
+using Nancy.Rest.Annotations.Atributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 

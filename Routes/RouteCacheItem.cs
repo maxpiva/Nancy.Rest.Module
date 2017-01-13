@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using Nancy.Rest.Annotations;
+using Nancy.Rest.Annotations.Enums;
 
 namespace Nancy.Rest.Module.Routes
 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Nancy.Rest.Annotations;
+using Nancy.Rest.Annotations.Atributes;
 using YAXLib;
 
 namespace Nancy.Rest.Module.Filters.Serializers.Xml

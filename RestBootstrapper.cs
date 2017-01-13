@@ -10,7 +10,7 @@ using Nancy.Rest.Module.Filters.Serializers.Xml;
 
 namespace Nancy.Rest.Module
 {
-    public class DefaultRestBootstrapper : DefaultNancyBootstrapper
+    public class RestBootstrapper : DefaultNancyBootstrapper
     {
 
         //We Need to skip this assembly from the available modules.
