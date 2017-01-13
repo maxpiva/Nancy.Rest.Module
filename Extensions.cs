@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Nancy.Rest.Annotations;
+using Nancy.Rest.Module.Filters;
 
 namespace Nancy.Rest.Module
 {
@@ -17,11 +17,9 @@ namespace Nancy.Rest.Module
             types.AddRange(minfo.DeclaringType?.GetInterfaces().ToList() ?? new List<Type>());
             foreach (Type t in types)
             {
-                MethodInfo m = t.GetMethods().FirstOrDefault(a => a.Name == minfo.Name);
+                MethodInfo m = t.GetMethod(minfo.Name, minfo.GetParameters().Select(a => a.ParameterType).ToArray());
                 if (m != null)
-                {
                     rests.AddRange(m.GetCustomAttributes(typeof(T)).Cast<T>().ToList());
-                }
             }
             return rests;
             
@@ -33,15 +31,13 @@ namespace Nancy.Rest.Module
             types.AddRange(minfo.GetInterfaces());
             foreach (Type t in types)
             {
-                MethodInfo m = t.GetMethods().FirstOrDefault(a => a.Name == minfo.Name);
-                if (m != null)
-                {
-                    rests.AddRange(m.GetCustomAttributes(typeof(T)).Cast<T>().ToList());
-                }
+                rests.AddRange(t.GetCustomAttributes(typeof(T)).Cast<T>().ToList());
             }
             return rests;
 
         }
+
+
         internal static bool IsAsyncMethod(this MethodInfo minfo)
         {
             return (minfo.GetCustomAttribute(typeof(AsyncStateMachineAttribute)) != null);
@@ -56,137 +52,69 @@ namespace Nancy.Rest.Module
             return false;
         }
 
-        internal static void NullWithAttribute(this object obj, Type attrtype)
+        internal static bool IsNullable(this Type type)
         {
-            if (obj == null)
-                return;
-            Type objType = obj.GetType();
-            foreach (PropertyInfo property in objType.GetProperties())
-            {
-                object propValue = property.GetValue(obj, null);
-                IList list = propValue as IList;
-                if (list != null)
-                {
-                    foreach (object item in list)
-                    {
-                        item.NullWithAttribute(attrtype);
-                    }
-                }
-                else
-                {
-                    if (property.PropertyType.Assembly == objType.Assembly)
-                    {
-                        propValue.NullWithAttribute(attrtype);
-                    }
-                    else
-                    {
-                        if (Attribute.IsDefined(property, attrtype))
-                        {
-                            if (propValue.IsNullable())
-                            {
-                                property.SetValue(obj, null);
-                            }
-                        }
-                    }
-                }
-            }
-            foreach (FieldInfo finfo in objType.GetFields())
-            {
-                object propValue = finfo.GetValue(obj);
-                IList list = propValue as IList;
-                if (list != null)
-                {
-                    foreach (object item in list)
-                    {
-                        item.NullWithAttribute(attrtype);
-                    }
-                }
-                else
-                {
-                    if (finfo.FieldType.Assembly == objType.Assembly)
-                    {
-                        propValue.NullWithAttribute(attrtype);
-                    }
-                    else
-                    {
-                        if (Attribute.IsDefined(finfo, attrtype))
-                        {
-                            if (propValue.IsNullable())
-                            {
-                                finfo.SetValue(obj, null);
-                            }
-                        }
-                    }
-                }
-            }
+            if (!type.IsValueType) return true;
+            if (Nullable.GetUnderlyingType(type) != null) return true;
+            return false;
+
         }
-        internal static void NullWithLevelAttribute(this object obj, int level)
+
+        internal static bool IsRouteable(this Type type)
         {
-            if (obj == null)
-                return;
-            Type objType = obj.GetType();
-            foreach (PropertyInfo property in objType.GetProperties())
-            {
-                object propValue = property.GetValue(obj, null);
-                IList list = propValue as IList;
-                if (list != null)
-                {
-                    foreach (object item in list)
-                    {
-                        item.NullWithLevelAttribute(level);
-                    }
-                }
-                else
-                {
-                    if (property.PropertyType.Assembly == objType.Assembly)
-                    {
-                        propValue.NullWithLevelAttribute(level);
-                    }
-                    else
-                    {
-                        if (Attribute.IsDefined(property, typeof(Level)))
-                        {
-                            if (propValue.IsNullable())
-                            {
-                                Level lv=property.GetCustomAttribute<Level>();
-                                if (lv.Value>level)
-                                    property.SetValue(obj, null);
-                            }
-                        }
-                    }
-                }
-            }
-            foreach (FieldInfo finfo in objType.GetFields())
-            {
-                object propValue = finfo.GetValue(obj);
-                IList list = propValue as IList;
-                if (list != null)
-                {
-                    foreach (object item in list)
-                    {
-                        item.NullWithLevelAttribute(level);
-                    }
-                }
-                else
-                {
-                    if (finfo.FieldType.Assembly == objType.Assembly)
-                    {
-                        propValue.NullWithLevelAttribute(level);
-                    }
-                    else
-                    {
-                        if (Attribute.IsDefined(finfo, typeof(Level)))
-                        {
-                            if (propValue.IsNullable())
-                            {
-                                Level lv = finfo.GetCustomAttribute<Level>();
-                                if (lv.Value > level)
-                                    finfo.SetValue(obj, null);
-                            }
-                        }
-                    }
-                }
-            }
+            if (type.IsValueType)
+                return true;
+            if (type == typeof(string) || type == typeof(Guid) || type==typeof(Guid?))
+                return true;
+            if (Nullable.GetUnderlyingType(type)?.IsValueType ?? false)
+                return true;
+            return false;
         }
+        public static bool SerializerSupportFilter(this NancyModule module)
+        {
+            string contentType = module.Request.Headers.Accept?.ElementAt(0)?.Item1;
+            if (contentType == null)
+                return false;
+            foreach (ISerializer serializer in module.Response.Serializers)
+            {
+                if (serializer.CanSerialize(contentType))
+                {
+                    if (serializer is IFilterSupport)
+                        return true;
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        public static NancyModule.RouteBuilder GetRouteBuilderForVerb(this NancyModule module, Verbs v)
+        {
+            NancyModule.RouteBuilder bld=null;
+            switch (v)
+            {
+                case Verbs.Get:
+                    bld = module.Get;
+                    break;
+                case Verbs.Post:
+                    bld = module.Post;
+                    break;
+                case Verbs.Put:
+                    bld = module.Put;
+                    break;
+                case Verbs.Delete:
+                    bld = module.Delete;
+                    break;
+                case Verbs.Options:
+                    bld = module.Options;
+                    break;
+                case Verbs.Patch:
+                    bld = module.Patch;
+                    break;
+                case Verbs.Head:
+                    bld = module.Head;
+                    break;
+            }
+            return bld;
+        } 
     }
 }

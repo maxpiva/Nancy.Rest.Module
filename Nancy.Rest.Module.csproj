@@ -30,11 +30,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DeepCloner, Version=0.8.0.0, Culture=neutral, PublicKeyToken=dc0b95cf99bf4e99, processorArchitecture=MSIL">
-      <HintPath>..\..\ShokoServer\packages\DeepCloner.0.9.3\lib\net40\DeepCloner.dll</HintPath>
-    </Reference>
     <Reference Include="Nancy, Version=1.4.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\ShokoServer\packages\Nancy.1.4.3\lib\net40\Nancy.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,21 +46,38 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TypeCache.cs" />
-    <Compile Include="RouteCache.cs" />
+    <Compile Include="Filters\IFilterSupport.cs" />
+    <Compile Include="Filters\FilterCarrier.cs" />
+    <Compile Include="Filters\Serializers\Helper.cs" />
+    <Compile Include="Filters\Serializers\Json\JsonFilteredBodyDeserializer.cs" />
+    <Compile Include="Filters\Serializers\Json\JsonFilteredContractResolver.cs" />
+    <Compile Include="Filters\Serializers\Json\JsonFilteredSerializer.cs" />
+    <Compile Include="Filters\Serializers\Xml\XmlFilteredBodyDeserializer.cs" />
+    <Compile Include="Filters\Serializers\Xml\XmlFilteredSerializer.cs" />
+    <Compile Include="Filters\Serializers\Xml\XmlFilteredSerializeProcessor.cs" />
+    <Compile Include="Helper\ParameterType.cs" />
+    <Compile Include="Exceptions\NancyRestModuleException.cs" />
+    <Compile Include="Routes\RouteCache.cs" />
+    <Compile Include="Routes\RouteCacheItem.cs" />
     <Compile Include="DefaultRestBootstrapper.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RestModule.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\YAXLib\YAXLib\YAXLib.csproj">
+      <Project>{f1c4d174-c948-4d18-a125-f6855ef55683}</Project>
+      <Name>YAXLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Nancy.Rest.Annotations\Nancy.Rest.Annotations.csproj">
       <Project>{2b35ae98-e24b-4a09-b1fb-230b90111b46}</Project>
       <Name>Nancy.Rest.Annotations</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
