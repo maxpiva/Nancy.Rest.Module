@@ -1,0 +1,3 @@
+[submodule "YAXLib"]
+	path = YAXLib
+	url = https://github.com/maxpiva/YAXLib
