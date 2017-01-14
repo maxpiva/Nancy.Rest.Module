@@ -64,6 +64,7 @@
     <Compile Include="Helper\Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RestModule.cs" />
+    <Compile Include="StreamWithContentType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Nancy.Rest.Annotations\Nancy.Rest.Annotations.csproj">
