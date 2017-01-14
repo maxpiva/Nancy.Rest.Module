@@ -147,6 +147,8 @@ namespace Nancy.Rest.ExampleServer
 
 ```
 
+
+
 ###To use the server in C# clients without much trouble and dynamic client proxy generation please continue reading how to use the client in [Nancy.Rest.Client](https://github.com/maxpiva/Nancy.Rest.Client)
 
 
