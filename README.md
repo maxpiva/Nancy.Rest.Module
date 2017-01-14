@@ -147,12 +147,20 @@ namespace Nancy.Rest.ExampleServer
 
 ```
 
-To use the server in C# clients without much trouble and dynamic client proxy generation please continue reading how to use the client in [Nancy.Rest.Client](https://github.com/maxpiva/Nancy.Rest.Client)
+###To use the server in C# clients without much trouble and dynamic client proxy generation please continue reading how to use the client in [Nancy.Rest.Client](https://github.com/maxpiva/Nancy.Rest.Client)
 
 
 ## History
 
 **1.4.3-Alpha**: First Release
+
+##WARNING
+
+THIS IS AN ALPHA VERSION, use at your own risk.
+
+## TODO
+
+* TODO :P
 
 ## Built With
 
