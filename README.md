@@ -1,6 +1,6 @@
 # Nancy.Rest.Module
 
-A Nancy Module capable of mounting an annotated interface in [Nancy](http://nancyfx.org).
+A Nancy Module capable of mounting an annotated interface.
 
 ## Installation
 
