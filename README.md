@@ -162,6 +162,11 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 
 ## TODO
 
+* Swagger!
+* Squash Bugs
+* Squash More Bugs
+* Pray
+* Change Bugs issues to features
 * TODO :P
 
 ## Built With
