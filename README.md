@@ -60,7 +60,7 @@ The following annotations are provided:
 * RestBasePath - The default path using to mount the module in Nancy.
 * Rest - Here you can add the route path, the verb, and optionaly the response content-type
 * Level - For transversal serialization, when a client sent the **level={number}** as a query parameter, any property in the models with level bigger than the one provided will be not sent to the client.
-* Tag - For transversal serialization, when a client sent the **tags={comma_separated_tags)** as a query parameter, any property in the model with the tags included will be no sent back to the client.
+* Tag - For transversal serialization, when a client sent the **excludetags={comma_separated_tags)** as a query parameter, any property in the model with the tags included will be no sent back to the client.
 * Ignore - The property will be ignored.
 
 
