@@ -15,7 +15,7 @@ Add [Nancy](http://nancyfx.org), [Nancy.Rest.Module](https://github.com/maxpiva/
 
 namespace Nancy.Rest.ExampleServer
 {
-    [RestBasePath("/")]
+    [RestBasePath("/api")]
     public interface IExample
     {
         [Rest("Person", Verbs.Get)]
@@ -139,7 +139,7 @@ namespace Nancy.Rest.ExampleServer
             HostConfiguration config = new HostConfiguration();
             config.UrlReservations.CreateAutomatically = false;
             config.RewriteLocalhost = true;
-            NancyHost hostNancy = new Nancy.Hosting.Self.NancyHost(config, new Uri("http://localhost:" + ServerSettings.JMMServerPort));
+            NancyHost hostNancy = new Nancy.Hosting.Self.NancyHost(config, new Uri("http://localhost"));
             hostNancy.Start();
         }
     }
@@ -147,54 +147,7 @@ namespace Nancy.Rest.ExampleServer
 
 ```
 
-To use the server in C# clients without much trouble and dynamic client proxy generation please continue reading how to use the client in [Nancy.Rest.Module](https://github.com/maxpiva/Nancy.Rest.Client)
-##Advanced Usage
-
-###Transversal Filtering
-
-[Nancy.Rest.Client](https://github.com/maxpiva/Nancy.Rest.Client) includes this interface.
-
-```csharp
-
-using System.Collections.Generic;
-
-namespace Nancy.Rest.Annotations.Interfaces
-{
-    public interface IFilter<T>
-    {
-        T FilterWithLevel(int level);
-
-        T FilterWithTags(IEnumerable<string> tags);
-
-        T FilterWithLevelAndTags(int level, IEnumerable<string> tags);
-
-    }
-}
-
-```
-
-Create a new interface in your client that includes, both, `IFilter` interface and your server interface.
-
-```csharp
-
-namespace Nancy.Rest.ExampleClient
-{    
-    public interface IExampleWithFiltering : IExample, IFilter<IExample>
-    {
-    }
-}
-
-```
-
-then you can use the transversal filtering capabilities of the server like this:
-
-
-```csharp
-
-namespace Nancy.Rest.ExampleClient
-{    
-    public class Example
-    {
+To use the server in C# clients without much trouble and dynamic client proxy generation please continue reading how to use the client in [Nancy.Rest.Client](https://github.com/maxpiva/Nancy.Rest.Client)
 
 
 ## History
