@@ -11,11 +11,12 @@ using System.Threading.Tasks;
 using Nancy.ModelBinding;
 using Nancy.Rest.Annotations.Atributes;
 using Nancy.Rest.Annotations.Enums;
-using Nancy.Rest.Annotations.Interfaces;
+
 using Nancy.Rest.Module.Exceptions;
 using Nancy.Rest.Module.Filters;
 using Nancy.Rest.Module.Helper;
 using Nancy.Rest.Module.Routes;
+using IStreamContentType = Nancy.Rest.Module.Interfaces.IStreamContentType;
 
 namespace Nancy.Rest.Module
 {
@@ -44,11 +45,11 @@ namespace Nancy.Rest.Module
             RouteBuilder bld = this.GetRouteBuilderForVerb(c.Verb);
             if (c.IsAsync)
             {
-                bld[c.Route, true] = async (o, token) => await RouteAsync(cls, cached, c.MethodInfo, o, c.ContentType, token);
+                bld[c.Route, true] = async (o, token) => await RouteAsync(cls, c.MethodInfo, o, c.ContentType, token);
             }
             else
             {
-                bld[c.Route] = o => Route(cls, cached, c.MethodInfo, o, c.ContentType);
+                bld[c.Route] = o => Route(cls, c.MethodInfo, o, c.ContentType);
             }
         }
         private static Regex rpath = new Regex("\\{(.*?)\\}", RegexOptions.Compiled);
@@ -133,8 +134,6 @@ namespace Nancy.Rest.Module
                 List<RestBasePath> paths = cls.GetType().GetCustomAttributesFromInterfaces<RestBasePath>().ToList();
                 if (paths.Count > 0)
                     tc.ModulePath = ModulePath = paths[0].BasePath;
-                if (cls.GetType().GetInterfaces().Any(a=>a.Name==typeof(IFilter<>).Name))
-                    tc.HasFilterInterface = true;
                 _cache.Add(cls.GetType(),tc);
                 List<string> errors = new List<string>();
                 foreach (MethodInfo m in cls.GetType().GetMethods())
@@ -172,7 +171,7 @@ namespace Nancy.Rest.Module
         }
 
 
-        private dynamic Filter(dynamic ret, RouteCache tcache, string responsecontenttype)
+        private dynamic Filter(dynamic ret, string responsecontenttype)
         {
             if (ret is Stream)
             {
@@ -190,21 +189,18 @@ namespace Nancy.Rest.Module
             {
                 int level = int.MaxValue;
                 List<string> tags = null;
-                if (tcache.HasFilterInterface)
+                string val = Request.Query[DefaultLevelQueryParameterName];
+                if (!string.IsNullOrEmpty(val))
                 {
-                    string val = Request.Query[DefaultLevelQueryParameterName];
-                    if (!string.IsNullOrEmpty(val))
+                    int.TryParse(val, out level);
+                }
+                val = Request.Query[DefaultExcludeTagsQueryParameterName];
+                if (!string.IsNullOrEmpty(val))
+                {
+                    string[] tg = val.Split(new[] { ',' },StringSplitOptions.RemoveEmptyEntries);
+                    if (tg.Length > 0)
                     {
-                        int.TryParse(val, out level);
-                    }
-                    val = Request.Query[DefaultExcludeTagsQueryParameterName];
-                    if (!string.IsNullOrEmpty(val))
-                    {
-                        string[] tg = val.Split(new[] { ',' },StringSplitOptions.RemoveEmptyEntries);
-                        if (tg.Length > 0)
-                        {
-                            tags = tg.ToList();
-                        }
+                        tags = tg.ToList();
                     }
                 }
                 FilterCarrier carrier=new FilterCarrier();
@@ -217,19 +213,19 @@ namespace Nancy.Rest.Module
 
         }
 
-        private async Task<object> RouteAsync(object cls, RouteCache tcache, MethodInfo m, dynamic d, string responsecontenttype, CancellationToken token)
+        private async Task<object> RouteAsync(object cls, MethodInfo m, dynamic d, string responsecontenttype, CancellationToken token)
         {
             CurrentModule = this;
             object[] pars = GetParametersFromDynamic(m, d,token);
             dynamic ret = await (dynamic) m.Invoke(cls, pars);
-            return Filter(ret, tcache,responsecontenttype);
+            return Filter(ret, responsecontenttype);
         }
-        private object Route(object cls, RouteCache tcache, MethodInfo m, dynamic d, string responsecontenttype)
+        private object Route(object cls, MethodInfo m, dynamic d, string responsecontenttype)
         {
             CurrentModule = this;
             object[] pars = GetParametersFromDynamic(m, d);
             dynamic ret = m.Invoke(cls, pars);
-            return Filter(ret,tcache,responsecontenttype);
+            return Filter(ret, responsecontenttype);
         }
 
         private object[] GetParametersFromDynamic(MethodInfo minfo, dynamic data, CancellationToken token=default(CancellationToken))

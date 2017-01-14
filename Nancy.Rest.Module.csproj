@@ -57,6 +57,7 @@
     <Compile Include="Filters\Serializers\Xml\XmlFilteredSerializeProcessor.cs" />
     <Compile Include="Helper\ParameterType.cs" />
     <Compile Include="Exceptions\NancyRestModuleException.cs" />
+    <Compile Include="Interfaces\IStreamContentType.cs" />
     <Compile Include="Routes\RouteCache.cs" />
     <Compile Include="Routes\RouteCacheItem.cs" />
     <Compile Include="RestBootstrapper.cs" />
