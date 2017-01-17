@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,8 +16,8 @@ using Nancy.Rest.Annotations.Enums;
 using Nancy.Rest.Module.Exceptions;
 using Nancy.Rest.Module.Filters;
 using Nancy.Rest.Module.Helper;
+using Nancy.Rest.Module.Interfaces;
 using Nancy.Rest.Module.Routes;
-using IStreamContentType = Nancy.Rest.Module.Interfaces.IStreamContentType;
 
 namespace Nancy.Rest.Module
 {
@@ -141,6 +142,8 @@ namespace Nancy.Rest.Module
                     Annotations.Atributes.Rest r = m.GetCustomAttributesFromInterfaces<Annotations.Atributes.Rest>().FirstOrDefault();
                     if (r == null)
                         continue;
+                    if (r.Verb == Verbs.Head && !StaticConfiguration.EnableHeadRouting)
+                        StaticConfiguration.EnableHeadRouting = true;
                     Type[] types = m.GetParameters().Select(a => a.ParameterType).ToArray();
                     MethodInfo method = cls.GetType().GetInterfaces().FirstOrDefault(a => a.GetMethod(m.Name, types) != null)?.GetMethod(m.Name, types);
                     if (method == null)
@@ -175,14 +178,11 @@ namespace Nancy.Rest.Module
         {
             if (ret is Stream)
             {
-                if (ret is IStreamContentType)
-                {
-                    string ct = ((IStreamContentType)ret).ContentType;
-                    if (!string.IsNullOrEmpty(ct))
-                        responsecontenttype = ct;
-                }
-                if (responsecontenttype == null)
+                if (ret is IStreamWithResponse)
+                    return Response.FromIStreamWithWithResponse((IStreamWithResponse) ret, responsecontenttype);
+                if (string.IsNullOrEmpty(responsecontenttype))
                     responsecontenttype = "application/octet-stream";
+                
                 return Response.FromStream((Stream)ret, responsecontenttype);
             }
             if (this.SerializerSupportFilter())
@@ -252,7 +252,12 @@ namespace Nancy.Rest.Module
                     if (c.CanConvertFrom(obj.Value.GetType()))
                         objs.Add(c.ConvertFrom(obj.Value));
                     else
-                        objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                    {
+                        if (p.DefaultValue != null && p.DefaultValue!=DBNull.Value)
+                            objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                        else
+                            objs.Add(GetDefault(p.ParameterType));
+                    }
                 }
                 else 
                 {
@@ -263,10 +268,24 @@ namespace Nancy.Rest.Module
                         objs.Add(n);
                     }
                     else
-                        objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                    {
+                        if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
+                            objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                        else
+                            objs.Add(GetDefault(p.ParameterType));
+                    }
                 }
             }
             return objs.ToArray();
+        }
+        public object GetDefault(Type t)
+        {
+            return this.GetType().GetMethod("GetDefaultGeneric").MakeGenericMethod(t).Invoke(this, null);
+        }
+
+        public T GetDefaultGeneric<T>()
+        {
+            return default(T);
         }
     }
 }

@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Nancy.Rest.Annotations.Enums;
 using Nancy.Rest.Module.Filters;
+using Nancy.Rest.Module.Interfaces;
 
 namespace Nancy.Rest.Module.Helper
 {
@@ -107,6 +110,39 @@ namespace Nancy.Rest.Module.Helper
                     );
             }
         }
+
+        public static Response FromIStreamWithWithResponse(this IResponseFormatter response, IStreamWithResponse stream, string defaultresponsecontentype)
+        {
+            if (stream is Stream)
+                throw new NotSupportedException("IStreamWithResponse should be also a stream");
+            Response n;
+            string contenttype = stream.ContentType;
+            if (contenttype == null)
+                contenttype = defaultresponsecontentype;
+            if (contenttype == null)
+                contenttype = "application/octet-stream";
+            if (stream.HasContent)
+                n = response.FromStream((Stream) stream, contenttype);
+            else
+            {
+                n = new Response();
+                if (!string.IsNullOrEmpty(stream.ResponseDescription))
+                    n.ReasonPhrase = stream.ResponseDescription;
+                n.ContentType = contenttype;
+            }
+            n.StatusCode = stream.ResponseStatus;
+            foreach (string head in stream.Headers.Keys)
+            {
+                n.Headers.Add(head, stream.Headers[head]);
+            }
+            if (stream.ContentLength != 0)
+                n.Headers.Add("Content-Length", stream.ContentLength.ToString(CultureInfo.InvariantCulture));
+            return n;
+        }
+
+
+
+
         public static NancyModule.RouteBuilder GetRouteBuilderForVerb(this NancyModule module, Verbs v)
         {
             NancyModule.RouteBuilder bld=null;
