@@ -1,6 +1,6 @@
 # Nancy.Rest.Module
 
-A Nancy Module capable of mounting an annotated interface.
+A Nancy Module capable of mounting an annotated interface and use transversal filtering capabilities.
 
 ## Installation
 
