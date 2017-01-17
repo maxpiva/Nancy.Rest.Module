@@ -1,6 +1,6 @@
 # Nancy.Rest.Module
 
-A Nancy Module capable of mounting an annotated interface.
+A Nancy Module capable of mounting an annotated interface and provides transversal filtering capabilities.
 
 ## Installation
 
@@ -73,7 +73,7 @@ The following annotations exists:
 
 namespace Nancy.Rest.ExampleServer
 {
-    public class ExampleImplementation
+    public class ExampleImplementation : IExample
     {
         public List<Person> GetAllPersons
         {
@@ -163,6 +163,7 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 
 ## TODO
 
+* Claim/Role based transversal filtering
 * Swagger!
 * Squash Bugs
 * Squash More Bugs
@@ -173,8 +174,7 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 ## Built With
 
 * [Nancy](http://nancyfx.org)
-* [JSON.Net](newtonsoft.com/json/) 
-* [YAXLib](https://github.com/sinairv/YAXLib)
+* [JSON.Net](http://newtonsoft.com/json/) 
 
 ## Credits
 
