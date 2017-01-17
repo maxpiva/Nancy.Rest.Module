@@ -73,7 +73,7 @@ The following annotations exists:
 
 namespace Nancy.Rest.ExampleServer
 {
-    public class ExampleImplementation
+    public class ExampleImplementation : IExample
     {
         public List<Person> GetAllPersons
         {
@@ -163,6 +163,7 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 
 ## TODO
 
+* Claim/Role based transversal filtering
 * Swagger!
 * Squash Bugs
 * Squash More Bugs
@@ -174,7 +175,6 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 
 * [Nancy](http://nancyfx.org)
 * [JSON.Net](newtonsoft.com/json/) 
-* [YAXLib](https://github.com/sinairv/YAXLib)
 
 ## Credits
 
