@@ -174,7 +174,7 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 ## Built With
 
 * [Nancy](http://nancyfx.org)
-* [JSON.Net](newtonsoft.com/json/) 
+* [JSON.Net](http://newtonsoft.com/json/) 
 
 ## Credits
 
