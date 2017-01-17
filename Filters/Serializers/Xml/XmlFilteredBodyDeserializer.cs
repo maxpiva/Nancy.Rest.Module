@@ -1,8 +1,7 @@
 ﻿using System.IO;
+using System.Xml.Serialization;
 using Nancy.ModelBinding;
 using Nancy.Rest.Module.Filters.Serializers.Json;
-using Nancy.Xml;
-using YAXLib;
 
 namespace Nancy.Rest.Module.Filters.Serializers.Xml
 {
@@ -31,20 +30,8 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
         public object Deserialize(string contentType, Stream bodyStream, BindingContext context)
         {
             bodyStream.Position = 0;
-            TextReader reader = null;
-            try
-            {
-                if (XmlSettings.EncodingEnabled)
-                    reader = new StreamReader(bodyStream, XmlSettings.DefaultEncoding);
-                else
-                    reader = new StreamReader(bodyStream);
-                YAXSerializer ser = new YAXSerializer(context.DestinationType);
-                return ser.Deserialize(reader);
-            }
-            finally
-            {
-                reader?.Dispose();
-            }
+            var ser = new XmlSerializer(context.DestinationType);
+            return ser.Deserialize(bodyStream);
         }
     }
 }

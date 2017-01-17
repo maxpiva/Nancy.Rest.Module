@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using Nancy.IO;
+using System.Linq;
+using System.Reflection;
+using System.Xml.Serialization;
+using Nancy.Rest.Annotations.Atributes;
 using Nancy.Rest.Module.Filters.Serializers.Json;
 using Nancy.Xml;
-using YAXLib;
+
 
 namespace Nancy.Rest.Module.Filters.Serializers.Xml
 {
@@ -29,11 +31,9 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
         /// <value>An <see cref="IEnumerable{T}"/> of extensions if any are available, otherwise an empty enumerable.</value>
         public IEnumerable<string> Extensions
         {
-            get
-            {
-                yield return "xml";
-            }
+            get { yield return "xml"; }
         }
+
 
         /// <summary>
         /// Serialize the given model with the given contentType
@@ -44,44 +44,95 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
         /// <returns>Serialised object</returns>
         public void Serialize<TModel>(string contentType, TModel model, Stream outputStream)
         {
-            try
+            if (model is FilterCarrier)
             {
-
-                TextWriter writer=null;
-                try
+                FilterCarrier carrier = (FilterCarrier) (object) model;
+                HashSet<Type> types = new HashSet<Type>();
+                GetTypesFromType(carrier.Object.GetType(), types);
+                XmlAttributeOverrides overrides = new XmlAttributeOverrides();
+                if (carrier.Level != int.MaxValue || (carrier.ExcludeTags != null && carrier.ExcludeTags.Count > 0))
                 {
-                    if (XmlSettings.EncodingEnabled)
-                        writer = new StreamWriter(new UnclosableStreamWrapper(outputStream), XmlSettings.DefaultEncoding);
-                    else
-                        writer = new StreamWriter(new UnclosableStreamWrapper(outputStream));
+                    XmlAttributes attribs = new XmlAttributes();
+                    attribs.XmlIgnore = true;
+                    foreach (Type t in types)
+                    {
+                        List<MemberInfo> members = t.GetProperties().Cast<MemberInfo>().ToList();
+                        members.AddRange(t.GetFields().Cast<MemberInfo>());
 
-                    if (model is FilterCarrier)
-                    {
-                        FilterCarrier carrier = (FilterCarrier) (object) model;
-                        YAXSerializer ser = new YAXSerializer(carrier.Object.GetType());
-                        ser.AttributesPreprocessor = new XmlFilteredSerializeProcessor(carrier.Level,carrier.ExcludeTags);
-                        ser.Serialize(carrier.Object, writer);
-                    }
-                    else
-                    {
-                        YAXSerializer ser = new YAXSerializer(model.GetType());
-                        ser.Serialize(model);
+                        foreach (MemberInfo m in members)
+                        {
+                            bool add = false;
+                            Level lev = m.GetCustomAttribute<Level>();
+                            if (lev?.Value > carrier.Level)
+                                add = true;
+                            else if (carrier.ExcludeTags != null && carrier.ExcludeTags.Count > 0)
+                            {
+                                Tags tags = m.GetCustomAttribute<Tags>();
+                                if (tags?.Values != null && tags.Values.Count > 0)
+                                {
+                                    foreach (string s in tags.Values)
+                                    {
+                                        if (carrier.ExcludeTags.Contains(s))
+                                        {
+                                            add = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (add)
+                            {
+                                overrides.Add(t, m.Name, attribs);
+                            }
+                        }
                     }
                 }
-                finally
+                var serializer = new XmlSerializer(carrier.Object.GetType(), overrides);
+
+                if (XmlSettings.EncodingEnabled)
                 {
-                    writer?.Dispose();
+                    serializer.Serialize(new StreamWriter(outputStream, XmlSettings.DefaultEncoding), carrier.Object);
+                }
+                else
+                {
+                    serializer.Serialize(outputStream, carrier.Object);
                 }
             }
-            catch (Exception exception)
+            else
             {
-                if (!StaticConfiguration.DisableErrorTraces)
+                var serializer = new XmlSerializer(typeof(TModel));
+
+                if (XmlSettings.EncodingEnabled)
                 {
-                    var bytes = Encoding.UTF8.GetBytes(exception.Message);
-                    outputStream.Write(bytes, 0, exception.Message.Length);
+                    serializer.Serialize(new StreamWriter(outputStream, XmlSettings.DefaultEncoding), model);
+                }
+                else
+                {
+                    serializer.Serialize(outputStream, model);
                 }
             }
         }
 
+        private static void GetTypesFromType(Type type, HashSet<Type> types)
+        {
+            types.Add(type);
+            foreach (PropertyInfo p in type.GetProperties())
+            {
+                if (p.PropertyType.IsClass)
+                {
+                    if (!types.Contains(p.PropertyType))
+                        GetTypesFromType(p.PropertyType, types);
+                }
+                else if (p.PropertyType.GetGenericArguments().Length > 0)
+                {
+                    foreach (Type n in p.PropertyType.GenericTypeArguments)
+                    {
+                        if (!types.Contains(n))
+                            GetTypesFromType(n, types);
+                    }
+                }
+            }
+        }
     }
 }
+

@@ -38,12 +38,14 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Filters\IFilterSupport.cs" />
@@ -54,7 +56,6 @@
     <Compile Include="Filters\Serializers\Json\JsonFilteredSerializer.cs" />
     <Compile Include="Filters\Serializers\Xml\XmlFilteredBodyDeserializer.cs" />
     <Compile Include="Filters\Serializers\Xml\XmlFilteredSerializer.cs" />
-    <Compile Include="Filters\Serializers\Xml\XmlFilteredSerializeProcessor.cs" />
     <Compile Include="Helper\ParameterType.cs" />
     <Compile Include="Exceptions\NancyRestModuleException.cs" />
     <Compile Include="Interfaces\IStreamContentType.cs" />
@@ -70,10 +71,6 @@
     <ProjectReference Include="Nancy.Rest.Annotations\Nancy.Rest.Annotations.csproj">
       <Project>{2b35ae98-e24b-4a09-b1fb-230b90111b46}</Project>
       <Name>Nancy.Rest.Annotations</Name>
-    </ProjectReference>
-    <ProjectReference Include="YAXLib\YAXLib\YAXLib.csproj">
-      <Project>{f1c4d174-c948-4d18-a125-f6855ef55683}</Project>
-      <Name>YAXLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
