@@ -176,13 +176,16 @@ namespace Nancy.Rest.Module
 
         private dynamic Filter(dynamic ret, string responsecontenttype)
         {
+            if (ret is Response)
+                return ret;
+            if (ret is HttpStatusCode)
+                return ret;
             if (ret is Stream)
             {
                 if (ret is IStreamWithResponse)
-                    return Response.FromIStreamWithWithResponse((IStreamWithResponse) ret, responsecontenttype);
+                    return Response.FromIStreamWithResponse((IStreamWithResponse) ret, responsecontenttype);
                 if (string.IsNullOrEmpty(responsecontenttype))
-                    responsecontenttype = "application/octet-stream";
-                
+                    responsecontenttype = "application/octet-stream";                
                 return Response.FromStream((Stream)ret, responsecontenttype);
             }
             if (this.SerializerSupportFilter())
@@ -210,7 +213,6 @@ namespace Nancy.Rest.Module
                 return carrier;
             }
             return ret;
-
         }
 
         private async Task<object> RouteAsync(object cls, MethodInfo m, dynamic d, string responsecontenttype, CancellationToken token)
