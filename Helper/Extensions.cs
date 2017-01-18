@@ -111,7 +111,7 @@ namespace Nancy.Rest.Module.Helper
             }
         }
 
-        public static Response FromIStreamWithWithResponse(this IResponseFormatter response, IStreamWithResponse stream, string defaultresponsecontentype)
+        public static Response FromIStreamWithResponse(this IResponseFormatter response, IStreamWithResponse stream, string defaultresponsecontentype)
         {
             if (stream is Stream)
                 throw new NotSupportedException("IStreamWithResponse should be also a stream");
