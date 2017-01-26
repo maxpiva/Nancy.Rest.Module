@@ -33,6 +33,28 @@ namespace Nancy.Rest.Module
         public string DefaultLevelQueryParameterName { get; set; } = "level";
         public string DefaultExcludeTagsQueryParameterName { get; set; } = "excludetags";
 
+        public static bool ShouldSerialize<T, S>(Func<T, S> a)
+        {
+            PropertyInfo p = typeof(T).GetProperty(typeof(S).Name);
+            Level l = p.GetCustomAttribute<Level>();
+            Tags t = p.GetCustomAttribute<Tags>();
+            if (l != null || t != null)
+            {
+                Tuple<int, List<string>> tup = CurrentModule.GetFilterData();
+                if (l != null && l.Value > tup.Item1)
+                    return false;
+                if (t != null)
+                {
+                    foreach (string s in tup.Item2)
+                    {
+                        if (t.Values.Contains(s, StringComparer.InvariantCultureIgnoreCase))
+                            return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         public RestModule() : base("/")
         {
         }
@@ -173,6 +195,26 @@ namespace Nancy.Rest.Module
             }
         }
 
+        private Tuple<int, List<string>> GetFilterData()
+        {
+            int level = int.MaxValue;
+            List<string> tags = null;
+            string val = Request.Query[DefaultLevelQueryParameterName];
+            if (!string.IsNullOrEmpty(val))
+            {
+                int.TryParse(val, out level);
+            }
+            val = Request.Query[DefaultExcludeTagsQueryParameterName];
+            if (!string.IsNullOrEmpty(val))
+            {
+                string[] tg = val.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                if (tg.Length > 0)
+                {
+                    tags = tg.ToList();
+                }
+            }
+            return new Tuple<int, List<string>>(level, tags);
+        }
 
         private dynamic Filter(dynamic ret, string responsecontenttype)
         {
@@ -190,25 +232,10 @@ namespace Nancy.Rest.Module
             }
             if (this.SerializerSupportFilter())
             {
-                int level = int.MaxValue;
-                List<string> tags = null;
-                string val = Request.Query[DefaultLevelQueryParameterName];
-                if (!string.IsNullOrEmpty(val))
-                {
-                    int.TryParse(val, out level);
-                }
-                val = Request.Query[DefaultExcludeTagsQueryParameterName];
-                if (!string.IsNullOrEmpty(val))
-                {
-                    string[] tg = val.Split(new[] { ',' },StringSplitOptions.RemoveEmptyEntries);
-                    if (tg.Length > 0)
-                    {
-                        tags = tg.ToList();
-                    }
-                }
+                Tuple<int, List<string>> tup=GetFilterData();
                 FilterCarrier carrier=new FilterCarrier();
-                carrier.Level = level;
-                carrier.ExcludeTags = tags;
+                carrier.Level = tup.Item1;
+                carrier.ExcludeTags = tup.Item2;
                 carrier.Object = (object) ret;
                 return carrier;
             }
