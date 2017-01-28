@@ -60,7 +60,7 @@ namespace Nancy.Rest.Module.Filters.Serializers.Json
             if (model is FilterCarrier)
             {
                 FilterCarrier carrier = (FilterCarrier)(object)model;
-                JsonSerializer nserializer = new JsonSerializer { ContractResolver = new FilteredContractResolver(carrier.Level, carrier.ExcludeTags) };
+                JsonSerializer nserializer = new JsonSerializer { ContractResolver = new FilteredContractResolver(carrier.Level, carrier.ExcludeTags), ReferenceLoopHandling = ReferenceLoopHandling.Serialize };
                 using (var writer = new JsonTextWriter(new StreamWriter(new UnclosableStreamWrapper(outputStream))))
                 {
                     nserializer.Serialize(writer, carrier.Object);

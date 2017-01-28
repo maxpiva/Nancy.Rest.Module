@@ -285,14 +285,22 @@ namespace Nancy.Rest.Module
                         if (p.DefaultValue != null && p.DefaultValue!=DBNull.Value)
                             objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
                         else
-                            objs.Add(GetDefault(p.ParameterType));
+                            objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
                     }
                 }
                 else 
                 {
                     if (!p.ParameterType.IsValueType)
                     {
-                        object n = Activator.CreateInstance(p.ParameterType);
+                        object n;
+                        try
+                        {
+                             n = Activator.CreateInstance(p.ParameterType);
+                        }
+                        catch (Exception e)
+                        {
+                            n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
+                        }
                         this.BindTo(n);
                         objs.Add(n);
                     }
