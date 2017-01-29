@@ -75,7 +75,9 @@ namespace Nancy.Rest.Module.Helper
         }
         public static bool SerializerSupportFilter(this NancyModule module)
         {
-            string contentType = module.Request.Headers.Accept?.ElementAt(0)?.Item1;
+            string contentType = null;
+            if (module.Request.Headers.Accept.Any())
+                contentType=module.Request.Headers.Accept?.ElementAt(0)?.Item1;
             if (contentType == null)
                 return false;
             foreach (ISerializer serializer in module.Response.Serializers)
@@ -113,7 +115,7 @@ namespace Nancy.Rest.Module.Helper
 
         public static Response FromIStreamWithResponse(this IResponseFormatter response, IStreamWithResponse stream, string defaultresponsecontentype)
         {
-            if (stream is Stream)
+            if (!(stream is Stream))
                 throw new NotSupportedException("IStreamWithResponse should be also a stream");
             Response n;
             string contenttype = stream.ContentType;

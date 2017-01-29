@@ -1,5 +1,7 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using Nancy.Rest.Annotations.Enums;
+using Nancy.Rest.Module.Helper;
 
 namespace Nancy.Rest.Module.Routes
 {
@@ -10,5 +12,7 @@ namespace Nancy.Rest.Module.Routes
         public bool IsAsync { get; set; }
         public string Route { get; set; }
         public string ContentType { get; set; }   
+
+        public List<ParamInfo> Parameters { get; set; }
     }
 }

@@ -68,16 +68,16 @@ namespace Nancy.Rest.Module
             RouteBuilder bld = this.GetRouteBuilderForVerb(c.Verb);
             if (c.IsAsync)
             {
-                bld[c.Route, true] = async (o, token) => await RouteAsync(cls, c.MethodInfo, o, c.ContentType, token);
+                bld[c.Route, true] = async (o, token) => await RouteAsync(cls, c, o, token);
             }
             else
             {
-                bld[c.Route] = o => Route(cls, c.MethodInfo, o, c.ContentType);
+                bld[c.Route] = o => Route(cls, c, o);
             }
         }
         private static Regex rpath = new Regex("\\{(.*?)\\}", RegexOptions.Compiled);
 
-        private string CheckMethodAssign(MethodInfo minfo, Annotations.Atributes.Rest attribute)
+        private Tuple<string, List<ParamInfo>> CheckMethodAssign(MethodInfo minfo, Annotations.Atributes.Rest attribute)
         {
             List<ParamInfo> parms=new List<ParamInfo>();
             MatchCollection collection = rpath.Matches(attribute.Route);
@@ -110,7 +110,7 @@ namespace Nancy.Rest.Module
                     {
                         ParameterType ptype = ParameterType.InstanceTypes.FirstOrDefault(a => a.Name == constraint);
                         if (ptype == null)
-                            return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has an unknown constraint '" + constraint + "'";
+                            return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has an unknown constraint '" + constraint + "'",null);
                         info.Constraint = ptype;
                     }
                     parms.Add(info);
@@ -121,24 +121,24 @@ namespace Nancy.Rest.Module
             {
                 ParameterInfo pinf = infos.FirstOrDefault(a => a.Name == p.Name);
                 if (pinf == null)
-                    return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has an unknown variable in the route path '" + p.Name + "'";
+                    return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has an unknown variable in the route path '" + p.Name + "'", null);
                 if (p.Optional && !pinf.ParameterType.IsNullable())
-                    return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' with variable '"+p.Name+"' is marked in the route path as nullable, but the method variable is not";
+                    return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' with variable '"+p.Name+"' is marked in the route path as nullable, but the method variable is not", null);
                 if (p.Constraint != null && !p.Constraint.Types.Contains(pinf.ParameterType))
-                    return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' with variable '" + p.Name + "' is constrained to type " + p.Constraint.BaseType + " but the method variable is not of the same type";
+                    return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' with variable '" + p.Name + "' is constrained to type " + p.Constraint.BaseType + " but the method variable is not of the same type", null);
                 if (!pinf.ParameterType.IsRouteable())
-                    return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' the variable '" + p.Name + "' is not a value type and is the route path";
+                    return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' the variable '" + p.Name + "' is not a value type and is the route path", null);
                 infos.Remove(pinf);
             }
             if (infos.Count > 0 && attribute.Verb == Verbs.Get)
             {
-                return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has post variables in a GET operation";
+                return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has post variables in a GET operation", null);
             }
             if (infos.Count > 1)
             {
-                return "Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has more than one Body object";
+                return new Tuple<string, List<ParamInfo>>("Method with Name: '" + minfo.Name + "' and Route: '" + attribute.Route + "' has more than one Body object", null);
             }
-            return null;
+            return new Tuple<string, List<ParamInfo>>(null, parms);
         }
         public void SetRestImplementation(object cls)
         {
@@ -170,16 +170,17 @@ namespace Nancy.Rest.Module
                     MethodInfo method = cls.GetType().GetInterfaces().FirstOrDefault(a => a.GetMethod(m.Name, types) != null)?.GetMethod(m.Name, types);
                     if (method == null)
                         method = m;
-                    string result = CheckMethodAssign(method, r);
-                    if (result!=null)
-                        errors.Add(result);
+                    Tuple<string,List<ParamInfo>> result = CheckMethodAssign(method, r);
+                    if (result.Item1!=null)
+                        errors.Add(result.Item1);
                     RouteCacheItem c = new RouteCacheItem
                     {
                         Verb = r.Verb,
                         Route = r.Route,
                         IsAsync = method.IsAsyncMethod(),
                         MethodInfo = method,
-                        ContentType = r.ResponseContentType
+                        ContentType = r.ResponseContentType,
+                        Parameters = result.Item2
                     };
                     tc.Items.Add(c);
                     MapRoute(tc, cls, c);
@@ -242,22 +243,22 @@ namespace Nancy.Rest.Module
             return ret;
         }
 
-        private async Task<object> RouteAsync(object cls, MethodInfo m, dynamic d, string responsecontenttype, CancellationToken token)
+        private async Task<object> RouteAsync(object cls, RouteCacheItem ci, dynamic d, CancellationToken token)
         {
             CurrentModule = this;
-            object[] pars = GetParametersFromDynamic(m, d,token);
-            dynamic ret = await (dynamic) m.Invoke(cls, pars);
-            return Filter(ret, responsecontenttype);
+            object[] pars = GetParametersFromDynamic(ci, ci.MethodInfo, d,token);
+            dynamic ret = await (dynamic) ci.MethodInfo.Invoke(cls, pars);
+            return Filter(ret, ci.ContentType);
         }
-        private object Route(object cls, MethodInfo m, dynamic d, string responsecontenttype)
+        private object Route(object cls, RouteCacheItem ci, dynamic d)
         {
             CurrentModule = this;
-            object[] pars = GetParametersFromDynamic(m, d);
-            dynamic ret = m.Invoke(cls, pars);
-            return Filter(ret, responsecontenttype);
+            object[] pars = GetParametersFromDynamic(ci, ci.MethodInfo, d);
+            dynamic ret = ci.MethodInfo.Invoke(cls, pars);
+            return Filter(ret, ci.ContentType);
         }
 
-        private object[] GetParametersFromDynamic(MethodInfo minfo, dynamic data, CancellationToken token=default(CancellationToken))
+        private object[] GetParametersFromDynamic(RouteCacheItem ci, MethodInfo minfo, dynamic data, CancellationToken token=default(CancellationToken))
         {
             List<object> objs = new List<object>();
             List<ParameterInfo> pars = minfo.GetParameters().ToList();
@@ -269,48 +270,72 @@ namespace Nancy.Rest.Module
                     objs.Add(token);
                     continue;
                 }
-                if (dict.ContainsKey(p.Name))
+                if (ci.Parameters.Any(a => a.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
                 {
-                    dynamic obj = dict[p.Name];
-                    if (obj.Value.GetType() == p.ParameterType)
+                    if (dict.ContainsKey(p.Name))
                     {
-                        objs.Add(obj.Value);
-                        continue;
+                        dynamic obj = dict[p.Name];
+                        if (obj.Value.GetType() == p.ParameterType)
+                        {
+                            objs.Add(obj.Value);
+                            continue;
+                        }
+                        if (p.ParameterType == typeof(DateTime))
+                        {
+                            objs.Add(DateTime.ParseExact((string) obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
+                        }
+                        else
+                        {
+                            TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
+                            if (c.CanConvertFrom(obj.Value.GetType()))
+                                objs.Add(c.ConvertFrom(obj.Value));
+                            else
+                            {
+                                if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
+                                    objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                                else
+                                    objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
+                            }
+                        }
                     }
-                    TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
-                    if (c.CanConvertFrom(obj.Value.GetType()))
-                        objs.Add(c.ConvertFrom(obj.Value));
                     else
                     {
-                        if (p.DefaultValue != null && p.DefaultValue!=DBNull.Value)
-                            objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                        if (!p.ParameterType.IsValueType)
+                        {
+                            object n;
+                            try
+                            {
+                                n = Activator.CreateInstance(p.ParameterType);
+                            }
+                            catch (Exception e)
+                            {
+                                n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
+                            }
+                            objs.Add(n);
+                        }
                         else
-                            objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
+                        {
+                            if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
+                                objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                            else
+                                objs.Add(GetDefault(p.ParameterType));
+                        }
                     }
                 }
-                else 
+                else
                 {
-                    if (!p.ParameterType.IsValueType)
+                    object n;
+                    try
                     {
-                        object n;
-                        try
-                        {
-                             n = Activator.CreateInstance(p.ParameterType);
-                        }
-                        catch (Exception e)
-                        {
-                            n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
-                        }
-                        this.BindTo(n);
-                        objs.Add(n);
+                        n = Activator.CreateInstance(p.ParameterType);
                     }
-                    else
+                    catch (Exception e)
                     {
-                        if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
-                            objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
-                        else
-                            objs.Add(GetDefault(p.ParameterType));
+                        n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
                     }
+
+                    n=this.Bind(p.ParameterType);
+                    objs.Add(n);
                 }
             }
             return objs.ToArray();
@@ -319,6 +344,13 @@ namespace Nancy.Rest.Module
         {
             return this.GetType().GetMethod("GetDefaultGeneric").MakeGenericMethod(t).Invoke(this, null);
         }
+        public object Bind(Type t)
+        {
+            MethodInfo method=typeof(ModuleExtensions).GetMethods().Where(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1).First();            
+            return method.MakeGenericMethod(t).Invoke(null, new object[]{this});
+        }
+
+        
 
         public T GetDefaultGeneric<T>()
         {
