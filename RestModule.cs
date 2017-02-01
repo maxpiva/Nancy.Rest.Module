@@ -33,9 +33,9 @@ namespace Nancy.Rest.Module
         public string DefaultLevelQueryParameterName { get; set; } = "level";
         public string DefaultExcludeTagsQueryParameterName { get; set; } = "excludetags";
 
-        public static bool ShouldSerialize<T, S>(Func<T, S> a)
+        public static bool ShouldSerialize<T, TS>(Func<T, TS> a)
         {
-            PropertyInfo p = typeof(T).GetProperty(typeof(S).Name);
+            PropertyInfo p = typeof(T).GetProperty(typeof(TS).Name);
             Level l = p.GetCustomAttribute<Level>();
             Tags t = p.GetCustomAttribute<Tags>();
             if (l != null || t != null)
@@ -303,13 +303,18 @@ namespace Nancy.Rest.Module
                         if (!p.ParameterType.IsValueType)
                         {
                             object n;
-                            try
+                            if (p.ParameterType == typeof(string))
+                                n = string.Empty;
+                            else
                             {
-                                n = Activator.CreateInstance(p.ParameterType);
-                            }
-                            catch (Exception e)
-                            {
-                                n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
+                                try
+                                {
+                                    n = Activator.CreateInstance(p.ParameterType);
+                                }
+                                catch (Exception)
+                                {
+                                    n = GetDefault(p.ParameterType);
+                                }
                             }
                             objs.Add(n);
                         }
@@ -324,29 +329,18 @@ namespace Nancy.Rest.Module
                 }
                 else
                 {
-                    object n;
-                    try
-                    {
-                        n = Activator.CreateInstance(p.ParameterType);
-                    }
-                    catch (Exception e)
-                    {
-                        n = p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType);
-                    }
-
-                    n=this.Bind(p.ParameterType);
-                    objs.Add(n);
+                    objs.Add(p.ParameterType==typeof(Stream) ? Request.Body : Bind(p.ParameterType));
                 }
             }
             return objs.ToArray();
         }
         public object GetDefault(Type t)
         {
-            return this.GetType().GetMethod("GetDefaultGeneric").MakeGenericMethod(t).Invoke(this, null);
+            return GetType().GetMethod("GetDefaultGeneric").MakeGenericMethod(t).Invoke(this, null);
         }
         public object Bind(Type t)
         {
-            MethodInfo method=typeof(ModuleExtensions).GetMethods().Where(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1).First();            
+            MethodInfo method=typeof(ModuleExtensions).GetMethods().First(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1);            
             return method.MakeGenericMethod(t).Invoke(null, new object[]{this});
         }
 
