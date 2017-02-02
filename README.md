@@ -160,7 +160,8 @@ namespace Nancy.Rest.ExampleServer
 
 ## History
 
-**1.4.3-Beta**: Removed bugs, Added StreamWithResponse class, for finetunnig Stream responses, published nugets.
+**1.4.3-Beta**: Removed bugs, Added StreamWithResponse class, for finetunning Stream responses, published nugets.
+
 **1.4.3-Alpha**: First Release
 
 ##WARNING
