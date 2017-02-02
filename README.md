@@ -190,7 +190,7 @@ THIS IS AN BETA VERSION, so far it works on my machine ;)
 
 ## Credits
 
-* **Maximo Piva** -[maxpiva](https://github.com/maxpiva)
+* **Maximo Piva** - [maxpiva](https://github.com/maxpiva)
 
 ## License
 
