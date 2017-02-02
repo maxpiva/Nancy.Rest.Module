@@ -4,7 +4,12 @@ A Nancy Module capable of mounting an annotated interface and provides transvers
 
 ## Installation
 
-Add [Nancy](http://nancyfx.org), [Nancy.Rest.Module](https://github.com/maxpiva/Nancy.Rest.Module) and [Nancy.Rest.Annotations](https://github.com/maxpiva/Nancy.Rest.Annotations) to your server project.
+* Add [Nancy](http://nancyfx.org), [Nancy.Rest.Module](https://github.com/maxpiva/Nancy.Rest.Module) and [Nancy.Rest.Annotations](https://github.com/maxpiva/Nancy.Rest.Annotations) to your server project.
+
+Or 
+
+* Add the Nuget package [Nancy.Rest.Module](https://www.nuget.org/packages/Nancy.Rest.Module/)
+
 
 ## Basic Usage
 
@@ -155,11 +160,12 @@ namespace Nancy.Rest.ExampleServer
 
 ## History
 
+**1.4.3-Beta**: Removed bugs, published nugets.
 **1.4.3-Alpha**: First Release
 
 ##WARNING
 
-THIS IS AN ALPHA VERSION, use at your own risk.
+THIS IS AN BETA VERSION, so far it works on my machine ;)
 
 ## TODO
 
@@ -170,6 +176,11 @@ THIS IS AN ALPHA VERSION, use at your own risk.
 * Pray
 * Change Bugs issues to features
 * TODO :P
+
+##MAYBE
+
+* Added secure module and secure client, wrapping request and responses models with signatures.
+
 
 ## Built With
 
