@@ -282,7 +282,15 @@ namespace Nancy.Rest.Module
                         }
                         if (p.ParameterType == typeof(DateTime))
                         {
-                            objs.Add(DateTime.ParseExact((string) obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
+                            //TODO add better handling and normalized DateTime Type
+                            try
+                            {
+                                objs.Add(DateTime.ParseExact((string) obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                            }
+                            catch
+                            {
+                                objs.Add(DateTime.ParseExact((string)obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
+                            }
                         }
                         else
                         {
