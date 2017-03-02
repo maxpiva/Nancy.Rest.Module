@@ -257,7 +257,7 @@ namespace Nancy.Rest.Module
             dynamic ret = ci.MethodInfo.Invoke(cls, pars);
             return Filter(ret, ci.ContentType);
         }
-
+        private static Regex datetimeplusfix=new Regex("(.*?)-(.*?)-(.*?)T(.*?):(.*?):(.*?)\\s(.*?)");
         private object[] GetParametersFromDynamic(RouteCacheItem ci, MethodInfo minfo, dynamic data, CancellationToken token=default(CancellationToken))
         {
             List<object> objs = new List<object>();
@@ -282,14 +282,22 @@ namespace Nancy.Rest.Module
                         }
                         if (p.ParameterType == typeof(DateTime))
                         {
+                            string s = (string)obj;
+                            Match m = datetimeplusfix.Match(s);
+                            if (m.Success)
+                            {
+                                int a = s.LastIndexOf(" ");
+                                s = s.Substring(0, a) + "+" + s.Substring(a + 1);
+                            }
                             //TODO add better handling and normalized DateTime Type
                             try
                             {
-                                objs.Add(DateTime.ParseExact((string) obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+
+                                objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
                             }
                             catch
                             {
-                                objs.Add(DateTime.ParseExact((string)obj, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
+                                objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
                             }
                         }
                         else

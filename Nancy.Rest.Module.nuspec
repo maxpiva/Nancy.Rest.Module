@@ -2,7 +2,7 @@
 <package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>Nancy.Rest.Module</id>
-    <version>1.4.3.1-beta</version>
+    <version>1.4.3.4-beta</version>
     <authors>Maximo Piva</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A Nancy Module capable of mounting an annotated interface and provides transversal filtering capabilities.</description>
