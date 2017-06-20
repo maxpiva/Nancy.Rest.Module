@@ -228,7 +228,7 @@ namespace Nancy.Rest.Module
                 if (ret is IStreamWithResponse)
                     return Response.FromIStreamWithResponse((IStreamWithResponse) ret, responsecontenttype);
                 if (string.IsNullOrEmpty(responsecontenttype))
-                    responsecontenttype = "application/octet-stream";                
+                    responsecontenttype = "application/octet-stream";
                 return Response.FromStream((Stream)ret, responsecontenttype);
             }
             if (this.SerializerSupportFilter())
@@ -362,7 +362,7 @@ namespace Nancy.Rest.Module
                 }
                 else
                 {
-                    objs.Add(p.ParameterType==typeof(Stream) ? Request.Body : Bind(p.ParameterType));
+                    objs.Add(p.ParameterType == typeof(Stream) ? Request.Body : Bind(p.ParameterType));
                 }
             }
             return objs.ToArray();
@@ -373,11 +373,15 @@ namespace Nancy.Rest.Module
         }
         public object Bind(Type t)
         {
-            MethodInfo method=typeof(ModuleExtensions).GetMethods().First(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1);            
-            return method.MakeGenericMethod(t).Invoke(null, new object[]{this});
-        }
+            if (t.IsValueType || t.IsPrimitive)
+            {
+                throw new ArgumentException("The current system fails on Value and primitive types due to lack of valid constructor.");
+            }
 
-        
+            MethodInfo method = typeof(ModuleExtensions).GetMethods()
+                .First(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1);
+            return method.MakeGenericMethod(t).Invoke(null, new object[] {this});
+        }
 
         public T GetDefaultGeneric<T>()
         {
