@@ -299,19 +299,36 @@ namespace Nancy.Rest.Module
                             {
                                 objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
                             }
+                            continue;
                         }
+                        Type ftype = Nullable.GetUnderlyingType(p.ParameterType);
+                        //Handle empty nullables
+                        if (ftype != null)
+                        {
+                            if (obj.Value == null)
+                            {
+                                objs.Add(null);
+                                continue;
+                            }
+                            if (obj.Value is string)
+                            {
+                                if (string.IsNullOrEmpty(obj.Value))
+                                {
+                                    objs.Add(null);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
+                        if (c.CanConvertFrom(obj.Value.GetType()))
+                            objs.Add(c.ConvertFrom(obj.Value));
                         else
                         {
-                            TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
-                            if (c.CanConvertFrom(obj.Value.GetType()))
-                                objs.Add(c.ConvertFrom(obj.Value));
+                            if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
+                                objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
                             else
-                            {
-                                if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
-                                    objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
-                                else
-                                    objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
-                            }
+                                objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
                         }
                     }
                     else
