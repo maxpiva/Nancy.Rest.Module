@@ -258,11 +258,77 @@ namespace Nancy.Rest.Module
             return Filter(ret, ci.ContentType);
         }
         private static Regex datetimeplusfix=new Regex("(.*?)-(.*?)-(.*?)T(.*?):(.*?):(.*?)\\s(.*?)");
+
+        private void AddObject(object ob, ParameterInfo p, List<object> objs)
+        {
+            dynamic obj = ob;
+            if (obj.Value.GetType() == p.ParameterType)
+            {
+                objs.Add(obj.Value);
+                return;
+            }
+            if (p.ParameterType == typeof(DateTime))
+            {
+                string s = (string)obj;
+                Match m = datetimeplusfix.Match(s);
+                if (m.Success)
+                {
+                    int a = s.LastIndexOf(" ");
+                    s = s.Substring(0, a) + "+" + s.Substring(a + 1);
+                }
+                //TODO add better handling and normalized DateTime Type
+                try
+                {
+
+                    objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                }
+                catch
+                {
+                    objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
+                }
+                return;
+            }
+            Type ftype = Nullable.GetUnderlyingType(p.ParameterType);
+            //Handle empty nullables
+            if (ftype != null)
+            {
+                if (obj.Value == null)
+                {
+                    objs.Add(null);
+                    return;
+                }
+                if (obj.Value is string)
+                {
+                    if (string.IsNullOrEmpty(obj.Value))
+                    {
+                        objs.Add(null);
+                        return;
+                    }
+                }
+            }
+
+            TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
+            if (c.CanConvertFrom(obj.Value.GetType()))
+                objs.Add(c.ConvertFrom(obj.Value));
+            else
+            {
+                if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
+                    objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
+                else
+                    objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
+            }
+        }
+
         private object[] GetParametersFromDynamic(RouteCacheItem ci, MethodInfo minfo, dynamic data, CancellationToken token=default(CancellationToken))
         {
             List<object> objs = new List<object>();
             List<ParameterInfo> pars = minfo.GetParameters().ToList();
             IDictionary<string, object> dict = (IDictionary<string, object>)data;
+            IDictionary<string, object> formdict = null;
+            if (this.Request.Form != null)
+            {
+                formdict= (IDictionary<string, object>)this.Request.Form;
+            }
             foreach (ParameterInfo p in pars)
             {
                 if (p.ParameterType == typeof(CancellationToken))
@@ -274,91 +340,18 @@ namespace Nancy.Rest.Module
                 {
                     if (dict.ContainsKey(p.Name))
                     {
-                        dynamic obj = dict[p.Name];
-                        if (obj.Value.GetType() == p.ParameterType)
-                        {
-                            objs.Add(obj.Value);
-                            continue;
-                        }
-                        if (p.ParameterType == typeof(DateTime))
-                        {
-                            string s = (string)obj;
-                            Match m = datetimeplusfix.Match(s);
-                            if (m.Success)
-                            {
-                                int a = s.LastIndexOf(" ");
-                                s = s.Substring(0, a) + "+" + s.Substring(a + 1);
-                            }
-                            //TODO add better handling and normalized DateTime Type
-                            try
-                            {
-
-                                objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
-                            }
-                            catch
-                            {
-                                objs.Add(DateTime.ParseExact(s, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
-                            }
-                            continue;
-                        }
-                        Type ftype = Nullable.GetUnderlyingType(p.ParameterType);
-                        //Handle empty nullables
-                        if (ftype != null)
-                        {
-                            if (obj.Value == null)
-                            {
-                                objs.Add(null);
-                                continue;
-                            }
-                            if (obj.Value is string)
-                            {
-                                if (string.IsNullOrEmpty(obj.Value))
-                                {
-                                    objs.Add(null);
-                                    continue;
-                                }
-                            }
-                        }
-
-                        TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
-                        if (c.CanConvertFrom(obj.Value.GetType()))
-                            objs.Add(c.ConvertFrom(obj.Value));
-                        else
-                        {
-                            if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
-                                objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
-                            else
-                                objs.Add(p.ParameterType == typeof(string) ? string.Empty : GetDefault(p.ParameterType));
-                        }
+                        AddObject(dict[p.Name],p,objs);
                     }
                     else
                     {
-                        if (!p.ParameterType.IsValueType)
-                        {
-                            object n;
-                            if (p.ParameterType == typeof(string))
-                                n = string.Empty;
-                            else
-                            {
-                                try
-                                {
-                                    n = Activator.CreateInstance(p.ParameterType);
-                                }
-                                catch (Exception)
-                                {
-                                    n = GetDefault(p.ParameterType);
-                                }
-                            }
-                            objs.Add(n);
-                        }
-                        else
-                        {
-                            if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
-                                objs.Add(p.DefaultValue); //TODO SANITIZE OR ERROR CHECK
-                            else
-                                objs.Add(GetDefault(p.ParameterType));
-                        }
+                        Type ftype = Nullable.GetUnderlyingType(p.ParameterType);
+                        if (ftype != null)
+                            objs.Add(null);
                     }
+                }
+                else if (formdict!=null && formdict.ContainsKey(p.Name))
+                {
+                    AddObject(formdict[p.Name], p, objs);
                 }
                 else
                 {
