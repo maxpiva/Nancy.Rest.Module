@@ -2,7 +2,7 @@
 <package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>Nancy.Rest.Module</id>
-    <version>1.4.3.5-beta</version>
+    <version>1.4.3.6-beta</version>
     <authors>Maximo Piva</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A Nancy Module capable of mounting an annotated interface and provides transversal filtering capabilities.</description>
@@ -13,14 +13,13 @@
     <projectUrl>https://github.com/maxpiva/Nancy.Rest.Module</projectUrl>
     <tags>Nancy Rest Server</tags>
     <dependencies>
-    	<dependency id="Newtonsoft.Json" version="9.0.1" />
+    	<dependency id="Newtonsoft.Json" version="10.0.3" />
       <dependency id="Nancy" version="[1.4.3,2.0)" />
-      <dependency id="Nancy.Rest.Annotations" version="[1.4.3.1-beta,2.0)"/>
+      <dependency id="Nancy.Rest.Annotations" version="[1.4.3.2-beta,2.0)"/>
     </dependencies>
   </metadata>
   <files>
     <file src="bin\Release\Nancy.Rest.Module.dll" target="lib\net452" />
     <file src="bin\Release\Nancy.Rest.Module.pdb" target="lib\net452" />
-    <file src="bin\Release\Nancy.Rest.Module.dll.config" target="lib\net452" />
   </files>
 </package>
