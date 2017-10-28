@@ -65,14 +65,13 @@ namespace Nancy.Rest.Module
         }
         internal void MapRoute(RouteCache cached, object cls, RouteCacheItem c)
         {
-            RouteBuilder bld = this.GetRouteBuilderForVerb(c.Verb);
             if (c.IsAsync)
             {
-                bld[c.Route, true] = async (o, token) => await RouteAsync(cls, c, o, token);
+                AddRoute(c.Verb.ToString().ToUpperInvariant(), c.Route, async (o, token) => await RouteAsync(cls, c, o, token), _ => true, c.MethodInfo.Name);
             }
             else
             {
-                bld[c.Route] = o => Route(cls, c, o);
+                AddRoute<dynamic>(c.Verb.ToString().ToUpperInvariant(), c.Route, (o,token) => Task.FromResult(Route(cls, c, o)), _ => true, c.MethodInfo.Name);
             }
         }
         private static Regex rpath = new Regex("\\{(.*?)\\}", RegexOptions.Compiled);
@@ -164,8 +163,8 @@ namespace Nancy.Rest.Module
                     Annotations.Atributes.Rest r = m.GetCustomAttributesFromInterfaces<Annotations.Atributes.Rest>().FirstOrDefault();
                     if (r == null)
                         continue;
-                    if (r.Verb == Verbs.Head && !StaticConfiguration.EnableHeadRouting)
-                        StaticConfiguration.EnableHeadRouting = true;
+//                    if (r.Verb == Verbs.Head && !StaticConfiguration.EnableHeadRouting)
+//                        StaticConfiguration.EnableHeadRouting = true;
                     Type[] types = m.GetParameters().Select(a => a.ParameterType).ToArray();
                     MethodInfo method = cls.GetType().GetInterfaces().FirstOrDefault(a => a.GetMethod(m.Name, types) != null)?.GetMethod(m.Name, types);
                     if (method == null)
@@ -309,7 +308,7 @@ namespace Nancy.Rest.Module
 
             TypeConverter c = TypeDescriptor.GetConverter(p.ParameterType);
             if (c.CanConvertFrom(obj.Value.GetType()))
-                objs.Add(c.ConvertFrom(obj.Value));
+                objs.Add(c.ConvertFrom(null,CultureInfo.InvariantCulture, obj.Value));
             else
             {
                 if (p.DefaultValue != null && p.DefaultValue != DBNull.Value)
@@ -371,7 +370,7 @@ namespace Nancy.Rest.Module
                 throw new ArgumentException("The current system fails on Value and primitive types due to lack of valid constructor.");
             }
 
-            MethodInfo method = typeof(ModuleExtensions).GetMethods()
+            MethodInfo method = typeof(Nancy.ModelBinding.ModuleExtensions).GetMethods()
                 .First(a => a.Name == "Bind" && a.ContainsGenericParameters && a.GetParameters().Length == 1);
             return method.MakeGenericMethod(t).Invoke(null, new object[] {this});
         }

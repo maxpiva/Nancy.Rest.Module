@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Serialization;
+using Nancy.Configuration;
+using Nancy.Responses.Negotiation;
 using Nancy.Rest.Annotations.Atributes;
 using Nancy.Rest.Module.Filters.Serializers.Json;
 using Nancy.Xml;
@@ -15,15 +17,33 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
     //Based on https://github.com/NancyFx/Nancy/blob/v1.4.3/src/Nancy/Responses/DefaultXmlSerializer.cs
     public class XmlFilteredSerializer : ISerializer, IFilterSupport
     {
+        private readonly XmlConfiguration configuration;
+        private readonly TraceConfiguration traceConfiguration;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultXmlSerializer"/> class,
+        /// with the provided <see cref="INancyEnvironment"/>.
+        /// </summary>
+        /// <param name="environment">An <see cref="INancyEnvironment"/> instance.</param>
+        public XmlFilteredSerializer(INancyEnvironment environment)
+        {
+            this.configuration = environment.GetValue<XmlConfiguration>();
+            this.traceConfiguration = environment.GetValue<TraceConfiguration>();
+        }
+
         /// <summary>
         /// Whether the serializer can serialize the content type
         /// </summary>
-        /// <param name="contentType">Content type to serialise</param>
+        /// <param name="mediaRange">Content type to serialise</param>
         /// <returns>True if supported, false otherwise</returns>
-        public bool CanSerialize(string contentType)
+        public bool CanSerialize(MediaRange mediaRange)
         {
-            return contentType.IsXmlType();
+            if (string.IsNullOrEmpty(mediaRange))
+                return false;
+            var content = mediaRange.ToString().Split(';')[0];
+            return content.IsXmlType();
         }
+
 
         /// <summary>
         /// Gets the list of extensions that the serializer can handle.
@@ -38,11 +58,11 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
         /// <summary>
         /// Serialize the given model with the given contentType
         /// </summary>
-        /// <param name="contentType">Content type to serialize into</param>
+        /// <param name="mediaRange">Content type to serialize into</param>
         /// <param name="model">Model to serialize</param>
         /// <param name="outputStream">Output stream to serialize to</param>
         /// <returns>Serialised object</returns>
-        public void Serialize<TModel>(string contentType, TModel model, Stream outputStream)
+        public void Serialize<TModel>(MediaRange mediaRange, TModel model, Stream outputStream)
         {
             if (model is FilterCarrier)
             {
@@ -89,9 +109,9 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
                 }
                 var serializer = new XmlSerializer(carrier.Object.GetType(), overrides);
 
-                if (XmlSettings.EncodingEnabled)
+                if (configuration.EncodingEnabled)
                 {
-                    serializer.Serialize(new StreamWriter(outputStream, XmlSettings.DefaultEncoding), carrier.Object);
+                    serializer.Serialize(new StreamWriter(outputStream, configuration.DefaultEncoding), carrier.Object);
                 }
                 else
                 {
@@ -102,9 +122,9 @@ namespace Nancy.Rest.Module.Filters.Serializers.Xml
             {
                 var serializer = new XmlSerializer(typeof(TModel));
 
-                if (XmlSettings.EncodingEnabled)
+                if (configuration.EncodingEnabled)
                 {
-                    serializer.Serialize(new StreamWriter(outputStream, XmlSettings.DefaultEncoding), model);
+                    serializer.Serialize(new StreamWriter(outputStream, configuration.DefaultEncoding), model);
                 }
                 else
                 {

@@ -1,42 +1,49 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using Nancy.Configuration;
 using Nancy.IO;
+using Nancy.Json;
+using Nancy.Responses;
+using Nancy.Responses.Negotiation;
+using Nancy.Xml;
 using Newtonsoft.Json;
 
 namespace Nancy.Rest.Module.Filters.Serializers.Json
 {
-    //Based on https://github.com/NancyFx/Nancy.Serialization.JsonNet/tree/v1.4.1/src/Nancy.Serialization.JsonNet
+    //Based on https://github.com/NancyFx/Nancy.Serialization.JsonNet/tree/v2.0.0-clinteastwood/src/Nancy.Serialization.JsonNet
 
     public class JsonFilteredSerializer : ISerializer, IFilterSupport
     {
         private readonly JsonSerializer _serializer;
+        private readonly JsonConfiguration jsonConfiguration;
+        private readonly GlobalizationConfiguration globalizationConfiguration;
+
+
+
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JsonFilteredSerializer"/> class.
+        /// Initializes a new instance of the <see cref="DefaultXmlSerializer"/> class,
+        /// with the provided <see cref="INancyEnvironment"/>.
         /// </summary>
-        public JsonFilteredSerializer()
+        /// <param name="environment">An <see cref="INancyEnvironment"/> instance.</param>
+        public JsonFilteredSerializer(INancyEnvironment environment)
         {
+            this.jsonConfiguration = environment.GetValue<JsonConfiguration>();
+            this.globalizationConfiguration = environment.GetValue<GlobalizationConfiguration>();
             _serializer = JsonSerializer.CreateDefault();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonFilteredSerializer"/> class,
-        /// with the provided <paramref name="serializer"/>.
-        /// </summary>
-        /// <param name="serializer">Json converters used when serializing.</param>
-        public JsonFilteredSerializer(JsonSerializer serializer)
-        {
-            _serializer = serializer;
         }
 
         /// <summary>
         /// Whether the serializer can serialize the content type
         /// </summary>
-        /// <param name="contentType">Content type to serialise</param>
+        /// <param name="mediaRange">Content type to serialise</param>
         /// <returns>True if supported, false otherwise</returns>
-        public bool CanSerialize(string contentType)
+        public bool CanSerialize(MediaRange mediaRange)
         {
-            return contentType.IsJsonType();
+            if (string.IsNullOrEmpty(mediaRange))
+                return false;
+            var content = mediaRange.ToString().Split(';')[0];
+            return content.IsJsonType();
         }
 
         /// <summary>
@@ -51,11 +58,11 @@ namespace Nancy.Rest.Module.Filters.Serializers.Json
         /// <summary>
         /// Serialize the given model with the given contentType
         /// </summary>
-        /// <param name="contentType">Content type to serialize into</param>
+        /// <param name="mediaRange">Content type to serialize into</param>
         /// <param name="model">Model to serialize</param>
-        /// <param name="outputStream">Output stream to serialize to</param>
+        /// <param name="outputStream">Stream to serialize to</param>
         /// <returns>Serialised object</returns>
-        public void Serialize<TModel>(string contentType, TModel model, Stream outputStream)
+        public void Serialize<TModel>(MediaRange mediaRange, TModel model, Stream outputStream)
         {
             if (model is FilterCarrier)
             {

@@ -9,7 +9,6 @@ namespace Nancy.Rest.Module.Interfaces
         string ResponseDescription { get; }
         Dictionary<string, string> Headers { get;  }
         long ContentLength { get; }
-
         bool HasContent { get; }
     }
 }

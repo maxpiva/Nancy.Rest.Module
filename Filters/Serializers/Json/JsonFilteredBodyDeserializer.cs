@@ -5,11 +5,12 @@ using System.Linq;
 using System.Reflection;
 using Nancy.Extensions;
 using Nancy.ModelBinding;
+using Nancy.Responses.Negotiation;
 using Newtonsoft.Json;
 
 namespace Nancy.Rest.Module.Filters.Serializers.Json
 {
-    //Copy of https://github.com/NancyFx/Nancy.Serialization.JsonNet/blob/v1.4.1/src/Nancy.Serialization.JsonNet/JsonNetBodyDeserializer.cs
+    //Copy of https://github.com/NancyFx/Nancy.Serialization.JsonNet/blob/v2.0.0-clinteastwood/src/Nancy.Serialization.JsonNet/JsonNetBodyDeserializer.cs
 
     public class JsonFilteredBodyDeserializer : IBodyDeserializer
     {
@@ -35,22 +36,25 @@ namespace Nancy.Rest.Module.Filters.Serializers.Json
         /// <summary>
         /// Whether the deserializer can deserialize the content type
         /// </summary>
-        /// <param name="contentType">Content type to deserialize</param>
+        /// <param name="mediaRange">Content type to deserialize</param>
         /// <param name="context">Current <see cref="BindingContext"/>.</param>
         /// <returns>True if supported, false otherwise</returns>
-        public bool CanDeserialize(string contentType, BindingContext context)
+        public bool CanDeserialize(MediaRange mediaRange, BindingContext context)
         {
-            return contentType.IsJsonType();
+            if (string.IsNullOrEmpty(mediaRange))
+                return false;
+            var content = mediaRange.ToString().Split(';')[0];
+            return content.IsJsonType();
         }
 
         /// <summary>
         /// Deserialize the request body to a model
         /// </summary>
-        /// <param name="contentType">Content type to deserialize</param>
+        /// <param name="mediaRange">Content type to deserialize</param>
         /// <param name="bodyStream">Request body stream</param>
-        /// <param name="context">Current context</param>
+        /// <param name="context">Current <see cref="BindingContext"/>.</param>
         /// <returns>Model instance</returns>
-        public object Deserialize(string contentType, Stream bodyStream, BindingContext context)
+        public object Deserialize(MediaRange mediaRange, Stream bodyStream, BindingContext context)
         {
             var deserializedObject =
                 _serializer.Deserialize(new StreamReader(bodyStream), context.DestinationType);

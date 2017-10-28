@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Nancy.Responses.Negotiation;
 using Nancy.Rest.Annotations.Enums;
 using Nancy.Rest.Module.Filters;
 using Nancy.Rest.Module.Interfaces;
@@ -80,14 +81,12 @@ namespace Nancy.Rest.Module.Helper
                 contentType=module.Request.Headers.Accept?.ElementAt(0)?.Item1;
             if (contentType == null)
                 return false;
-            foreach (ISerializer serializer in module.Response.Serializers)
+            ISerializer serializer=module.Response.SerializerFactory.GetSerializer(new MediaRange(contentType));
+            if (serializer.CanSerialize(contentType))
             {
-                if (serializer.CanSerialize(contentType))
-                {
-                    if (serializer is IFilterSupport)
-                        return true;
-                    return false;
-                }
+                if (serializer is IFilterSupport)
+                    return true;
+                return false;
             }
             return false;
         }
@@ -142,37 +141,5 @@ namespace Nancy.Rest.Module.Helper
             return n;
         }
 
-
-
-
-        public static NancyModule.RouteBuilder GetRouteBuilderForVerb(this NancyModule module, Verbs v)
-        {
-            NancyModule.RouteBuilder bld=null;
-            switch (v)
-            {
-                case Verbs.Get:
-                    bld = module.Get;
-                    break;
-                case Verbs.Post:
-                    bld = module.Post;
-                    break;
-                case Verbs.Put:
-                    bld = module.Put;
-                    break;
-                case Verbs.Delete:
-                    bld = module.Delete;
-                    break;
-                case Verbs.Options:
-                    bld = module.Options;
-                    break;
-                case Verbs.Patch:
-                    bld = module.Patch;
-                    break;
-                case Verbs.Head:
-                    bld = module.Head;
-                    break;
-            }
-            return bld;
-        } 
     }
 }

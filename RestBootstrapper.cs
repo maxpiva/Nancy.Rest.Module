@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nancy.Bootstrapper;
 using Nancy.Diagnostics;
+using Nancy.Extensions;
 using Nancy.ModelBinding;
 using Nancy.Responses.Negotiation;
 using Nancy.Rest.Module.Filters.Serializers.Json;
@@ -22,8 +23,7 @@ namespace Nancy.Rest.Module
                 return 
                     _modules
                     ??
-                    (_modules = AppDomainAssemblyTypeScanner
-                                        .TypesOf<INancyModule>(ScanMode.ExcludeNancy)
+                    (_modules = this.TypeCatalog.GetTypesAssignableTo<INancyModule>(TypeResolveStrategies.ExcludeNancy)
                                         .NotOfType<DiagnosticModule>()
                                         .Where(a=>a.Name!=typeof(RestModule).Name).Select(t => new ModuleRegistration(t))
                                         .ToArray());
@@ -36,7 +36,7 @@ namespace Nancy.Rest.Module
             {
                 if (_bodySerializers == null)
                 {
-                    List<Type> serializers = AppDomainAssemblyTypeScanner.TypesOf<IBodyDeserializer>(ScanMode.ExcludeNancy).ToList();
+                    List<Type> serializers = this.TypeCatalog.GetTypesAssignableTo<IBodyDeserializer>(TypeResolveStrategies.ExcludeNancy).ToList();
                     RemoveProcessors(serializers).ForEach(a => serializers.Remove(a)); 
                     serializers.Add(typeof(JsonFilteredBodyDeserializer));
                     serializers.Add(typeof(XmlFilteredBodyDeserializer));
@@ -47,21 +47,23 @@ namespace Nancy.Rest.Module
         }
         //TODO find a dynamic way of remove originals, instead of asking for ContentType, so it can be extensible to other protocols.
         //Remove json and xml serializer, add our filter-able serializers.
-        private NancyInternalConfiguration _configuration;
-        protected override NancyInternalConfiguration InternalConfiguration
+        private Func<ITypeCatalog, NancyInternalConfiguration> _configuration;
+        protected override Func<ITypeCatalog, NancyInternalConfiguration> InternalConfiguration
         {
             get
             {
                 if (_configuration == null)
                 {
                     _configuration = base.InternalConfiguration ?? NancyInternalConfiguration.Default;
-                    RemoveProcessors(_configuration.Serializers).ForEach(a=> _configuration.Serializers.Remove(a));
-                    _configuration.Serializers.Add(typeof(JsonFilteredSerializer));
-                    _configuration.Serializers.Add(typeof(XmlFilteredSerializer));
-                    _configuration.ResponseProcessors.Remove(typeof(JsonProcessor));
-                    _configuration.ResponseProcessors.Remove(typeof(XmlProcessor));
-                    _configuration.ResponseProcessors.Add(typeof(JsonProcessor));
-                    _configuration.ResponseProcessors.Add(typeof(XmlProcessor));
+                    NancyInternalConfiguration conf = _configuration(this.TypeCatalog);
+
+                    RemoveProcessors(conf.Serializers).ForEach(a=> conf.Serializers.Remove(a));
+                    conf.Serializers.Add(typeof(JsonFilteredSerializer));
+                    conf.Serializers.Add(typeof(XmlFilteredSerializer));
+                    conf.ResponseProcessors.Remove(typeof(JsonProcessor));
+                    conf.ResponseProcessors.Remove(typeof(XmlProcessor));
+                    conf.ResponseProcessors.Add(typeof(JsonProcessor));
+                    conf.ResponseProcessors.Add(typeof(XmlProcessor));
                 }
                 return _configuration;
             }
