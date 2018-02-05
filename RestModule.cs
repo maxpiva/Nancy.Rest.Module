@@ -177,7 +177,7 @@ namespace Nancy.Rest.Module
                     {
                         Verb = r.Verb,
                         Route = r.Route,
-                        IsAsync = method.IsAsyncMethod(),
+                        IsAsync = m.IsAsyncMethod(),
                         MethodInfo = method,
                         ContentType = r.ResponseContentType,
                         Parameters = result.Item2
