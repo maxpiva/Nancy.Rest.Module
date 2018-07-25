@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net47</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard2.0</TargetFrameworks>
     <Version>1.4.4.0-beta</Version>
     <PackageProjectUrl>https://github.com/maxpiva/Nancy.Rest.Module</PackageProjectUrl>
     <RepositoryUrl>https://github.com/maxpiva/Nancy.Rest.Module</RepositoryUrl>
